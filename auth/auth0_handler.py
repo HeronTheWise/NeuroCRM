@@ -50,12 +50,28 @@ def login():
     if "user" in st.session_state:
         return st.session_state["user"]
 
-    st.markdown("### 🔐 Please log in to continue:")
-    st.markdown(f"[Login with Auth0]({build_login_url()})")
+    # Not logged in (or after logout)
+    st.markdown("### 🔐 You must log in to continue")
+    st.markdown(f'''
+        <a href="{build_login_url()}" target="_self" style="text-decoration:none;font-weight:bold;">
+            🔓 Login with Auth0
+        </a>
+    ''', unsafe_allow_html=True)
     st.stop()
     
 def logout_button():
     import streamlit as st
     logout_url = f"https://{config.AUTH0_DOMAIN}/v2/logout?returnTo={config.REDIRECT_URI}&client_id={config.AUTH0_CLIENT_ID}"
+    
+    # Clear user session for Streamlit (acts locally)
+    if "user" in st.session_state:
+        del st.session_state["user"]
+
+    # Show Logout link (still needed to log out of Auth0)
     st.sidebar.markdown("---")
-    st.sidebar.markdown(f"🔓 [Logout]({logout_url})", unsafe_allow_html=True)
+    st.sidebar.markdown(f'''
+        <a href="{logout_url}" target="_self" style="text-decoration:none;">
+            🔓 Logout
+        </a>
+    ''', unsafe_allow_html=True)
+
