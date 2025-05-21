@@ -38,7 +38,7 @@ def get_user_info(token):
     return res.json()
 
 def login():
-    query_params = st.experimental_get_query_params()
+    query_params = st.query_params()
     if "code" in query_params:
         code = query_params["code"][0]
         token = get_token(code)
