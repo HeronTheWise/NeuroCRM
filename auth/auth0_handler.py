@@ -44,7 +44,7 @@ def login():
         token = get_token(code)
         user = get_user_info(token)
         st.session_state["user"] = user
-        st.query_params()  # clean URL
+        st.experimental_set_query_params()  # clean URL
         return user
 
     if "user" in st.session_state:
