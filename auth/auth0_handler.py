@@ -53,3 +53,9 @@ def login():
     st.markdown("### 🔐 Please log in to continue:")
     st.markdown(f"[Login with Auth0]({build_login_url()})")
     st.stop()
+    
+def logout_button():
+    import streamlit as st
+    logout_url = f"https://{config.AUTH0_DOMAIN}/v2/logout?returnTo={config.REDIRECT_URI}&client_id={config.AUTH0_CLIENT_ID}"
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"🔓 [Logout]({logout_url})", unsafe_allow_html=True)
