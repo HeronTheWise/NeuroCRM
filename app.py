@@ -9,6 +9,10 @@ user = login()
 user_email = user.get("email", "unknown")
 st.sidebar.success(f"Logged in as {user_email}")
 
+from auth.auth0_handler import logout_button
+logout_button()
+
+
 # Unified Navigation
 page = st.sidebar.radio("📂 Navigate", [
     "📋 Lead Tracker", "📝 Proposal Builder", "📊 Project Dashboard", 
@@ -94,7 +98,6 @@ if page == "📋 Lead Tracker":
                 st.success("Deleted successfully.")
                 st.rerun()
 
-
 elif page == "📝 Proposal Builder":
     from proposals.proposal_generator import generate_proposal_from_template
     from leads.lead_manager import init_leads_data
@@ -122,7 +125,6 @@ elif page == "📝 Proposal Builder":
                 st.success("✅ Proposal generated!")
                 st.text_area("📄 Proposal Output", proposal, height=400)
 
-
 elif page == "📊 Project Dashboard":
     from tracker.gantt import render_gantt
     from tracker.risk_analytics import analyze_risks
@@ -146,7 +148,71 @@ elif page == "📊 Project Dashboard":
             st.success("✅ No critical risks detected.")
 
         st.subheader("📌 Work Breakdown Structure")
-        st.info("WBS per project coming soon. Milestone feature under development.")
+        from tracker.wbs import load_wbs, save_wbs, delete_milestone
+        import plotly.express as px
+
+        st.subheader("📌 Work Breakdown Structure")
+
+        project_names = df["Name"].unique().tolist()
+        selected_project = st.selectbox("Select Project for WBS", project_names)
+
+        wbs_df = load_wbs(user_email, selected_project)
+
+        # Add new milestone
+        with st.expander("➕ Add New Milestone"):
+            with st.form("milestone_form"):
+                m_name = st.text_input("Milestone Name")
+                m_status = st.selectbox("Status", ["Planned", "In Progress", "Completed"])
+                m_due = st.date_input("Due Date")
+                m_notes = st.text_area("Notes (optional)")
+                if st.form_submit_button("Add"):
+                    new_row = pd.DataFrame([{
+                        "Milestone": m_name, "Status": m_status,
+                        "Due Date": m_due, "Notes": m_notes
+                    }])
+                    wbs_df = pd.concat([wbs_df, new_row], ignore_index=True)
+                    save_wbs(user_email, selected_project, wbs_df)
+                    st.success("Milestone added!")
+                    st.rerun()
+
+        # Editable table
+        st.markdown("### 📝 Existing Milestones")
+        if wbs_df.empty:
+            st.info("No milestones yet.")
+        else:
+            for i, row in wbs_df.iterrows():
+                with st.expander(f"{row['Milestone']}"):
+                    cols = st.columns([3, 1])
+                    with cols[0]:
+                        new_status = st.selectbox("Status", ["Planned", "In Progress", "Completed"], index=["Planned", "In Progress", "Completed"].index(row["Status"]), key=f"status_{i}")
+                        new_notes = st.text_area("Notes", value=row["Notes"], key=f"notes_{i}")
+                    with cols[1]:
+                        if st.button("🗑 Delete", key=f"delete_{i}"):
+                            delete_milestone(user_email, selected_project, i)
+                            st.rerun()
+                    # Save updated
+                    wbs_df.at[i, "Status"] = new_status
+                    wbs_df.at[i, "Notes"] = new_notes
+            save_wbs(user_email, selected_project, wbs_df)
+
+        # Optional Visualization
+        st.markdown("### 📈 Timeline View")
+        if not wbs_df.empty:
+            try:
+                plot_df = wbs_df.copy()
+                plot_df["Due Date"] = pd.to_datetime(plot_df["Due Date"])
+                fig = px.timeline(
+                    plot_df,
+                    x_start="Due Date",
+                    x_end="Due Date",
+                    y="Milestone",
+                    color="Status",
+                    hover_data=["Notes"]
+                )
+                fig.update_layout(height=400, title="WBS Timeline (Milestones Due)")
+                st.plotly_chart(fig, use_container_width=True)
+            except Exception as e:
+                st.warning("Unable to render timeline: " + str(e))
 
 
 elif page == "📁 Saved Jobs":
@@ -191,7 +257,6 @@ elif page == "📁 Saved Jobs":
             st.markdown("---")
 
         save_jobs(user_email, df)
-
 
 elif page == "📦 Exports":
     from leads.lead_manager import init_leads_data
@@ -246,6 +311,20 @@ elif page == "📦 Exports":
     st.subheader("🖨️ PDF / Full Report")
     st.info("PDF export will be available in the Pro version.")
 
-
 elif page == "⚙️ Settings":
-    st.write("⚙️ User Settings Placeholder")
+    st.header("⚙️ User Settings")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("🧑 User Info")
+        st.write(f"**Email:** {user.get('email', 'unknown')}")
+        st.write(f"**Name:** {user.get('name', 'N/A')}")
+        st.write(f"**Auth Provider:** {user.get('sub', 'N/A')}")
+
+    with col2:
+        st.subheader("🎛 Preferences")
+        theme = st.radio("Theme", ["Light", "Dark (coming soon)"], index=0, disabled=True)
+        lang = st.selectbox("Language", ["English", "Coming soon..."], index=0)
+
+    st.markdown("### 🔄 Account Controls")
+    st.info("🚧 Account deletion, notifications and billing coming soon.")
