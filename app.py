@@ -22,15 +22,9 @@ logout_button()
 # Unified Navigation
 page = st.sidebar.radio("📂 Navigate", [
     "📋 Lead Tracker", "📝 Proposal Builder", "📊 Project Dashboard", 
-    "📁 Saved Jobs", "📦 Exports", "⚙️ Settings"
-])
+    "📁 Saved Jobs", "📦 Exports", "⚙️ Settings"])
 
 if page == "📋 Lead Tracker":
-    if page == "📋 Lead Tracker":
-        from leads.lead_manager import (
-            init_leads_data, save_leads_data, delete_lead,
-            calculate_lead_score, assign_lead_tier
-        )  
         st.subheader("📋 Manage Your Leads")
 
         df = init_leads_data(user_email)
@@ -41,6 +35,7 @@ if page == "📋 Lead Tracker":
 
         # ✏️ Inline editing
         st.markdown("### ✏️ Edit Leads Inline")
+        from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
         gb = GridOptionsBuilder.from_dataframe(df)
         gb.configure_default_column(editable=True)
         gb.configure_column("Lead Score", editable=False)
@@ -88,7 +83,6 @@ if page == "📋 Lead Tracker":
                 df = pd.concat([df, new_lead], ignore_index=True)
                 save_leads_data(user_email, df)
 
-                # Save file
                 if uploaded_file:
                     folder = f"data/uploads/{user_email}/{name.replace(' ', '_')}/"
                     os.makedirs(folder, exist_ok=True)
@@ -111,20 +105,16 @@ if page == "📋 Lead Tracker":
                     st.success("Deleted successfully.")
                     st.rerun()
 
-        # 📊 Show Prioritized Leads Summary
+        # 🔥 Summary Table
         st.markdown("### 🔥 Prioritized Lead Summary")
         st.dataframe(df[[
             "Name", "Email", "Project Type", "Status",
             "Budget", "End Date", "Lead Score", "Priority"
-            ]])
-        
-        #kanban view
+        ]])
+
+        # 🧩 Interactive Kanban (with editing + auto-archive)
+        st.markdown("### 🧱 Kanban View")
         interactive_kanban(df, user_email, save_leads_data)
-        st.markdown("### 🗂 Lead Status Board (Kanban View)")
-        render_kanban(df)
-
-
-
 
 elif page == "📝 Proposal Builder":
     from proposals.proposal_generator import generate_proposal_from_template
@@ -241,7 +231,6 @@ elif page == "📊 Project Dashboard":
                 st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.warning("Unable to render timeline: " + str(e))
-
 
 elif page == "📁 Saved Jobs":
     from jobs.saved_jobs import load_saved_jobs, save_jobs, delete_job, add_job
