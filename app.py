@@ -5,10 +5,13 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from leads.lead_manager import calculate_lead_score, assign_lead_tier
 from leads.kanban import render_kanban
 from leads.kanban import interactive_kanban
-
+from auth import require_login, show_logout
 
 import os
 st.set_page_config(page_title="NeuroCRM", layout="wide")
+
+require_login()
+
 st.title("🧠 NeuroCRM – AI CRM for Freelancers")
 
 user = login()
@@ -17,7 +20,6 @@ st.sidebar.success(f"Logged in as {user_email}")
 
 from auth.auth0_handler import logout_button
 logout_button()
-
 
 # Unified Navigation
 page = st.sidebar.radio("📂 Navigate", [
@@ -345,3 +347,5 @@ elif page == "⚙️ Settings":
 
     st.markdown("### 🔄 Account Controls")
     st.info("🚧 Account deletion, notifications and billing coming soon.")
+
+show_logout()
