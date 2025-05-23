@@ -1,7 +1,13 @@
 import streamlit as st
 from auth.auth0_handler import login
 import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+from leads.lead_manager import calculate_lead_score, assign_lead_tier
+from leads.kanban import render_kanban
+from leads.kanban import interactive_kanban
 
+
+import os
 st.set_page_config(page_title="NeuroCRM", layout="wide")
 st.title("🧠 NeuroCRM – AI CRM for Freelancers")
 
@@ -20,83 +26,105 @@ page = st.sidebar.radio("📂 Navigate", [
 ])
 
 if page == "📋 Lead Tracker":
-    from leads.lead_manager import init_leads_data, save_leads_data, delete_lead
-    from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-    import os
+    if page == "📋 Lead Tracker":
+        from leads.lead_manager import (
+            init_leads_data, save_leads_data, delete_lead,
+            calculate_lead_score, assign_lead_tier
+        )  
+        st.subheader("📋 Manage Your Leads")
 
-    st.subheader("📋 Manage Your Leads")
+        df = init_leads_data(user_email)
 
-    df = init_leads_data(user_email)
+        # 🎯 Add Lead Score & Priority
+        df["Lead Score"] = df.apply(calculate_lead_score, axis=1)
+        df["Priority"] = df["Lead Score"].apply(assign_lead_tier)
 
-    # Inline editing
-    st.markdown("### ✏️ Edit Leads Inline")
-    gb = GridOptionsBuilder.from_dataframe(df)
-    gb.configure_default_column(editable=True)
-    grid_options = gb.build()
+        # ✏️ Inline editing
+        st.markdown("### ✏️ Edit Leads Inline")
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_default_column(editable=True)
+        gb.configure_column("Lead Score", editable=False)
+        gb.configure_column("Priority", editable=False)
+        grid_options = gb.build()
 
-    grid_response = AgGrid(
-        df,
-        gridOptions=grid_options,
-        update_mode=GridUpdateMode.MODEL_CHANGED,
-        fit_columns_on_grid_load=True
-    )
-    edited_df = grid_response["data"]
+        grid_response = AgGrid(
+            df,
+            gridOptions=grid_options,
+            update_mode=GridUpdateMode.MODEL_CHANGED,
+            fit_columns_on_grid_load=True
+        )
+        edited_df = grid_response["data"]
 
-    if st.button("💾 Save Edits"):
-        save_leads_data(user_email, edited_df)
-        st.success("Leads updated successfully.")
+        if st.button("💾 Save Edits"):
+            save_leads_data(user_email, edited_df)
+            st.success("Leads updated successfully.")
 
-    # Add New Lead
-    st.markdown("### ➕ Add New Lead")
-    with st.form("add_lead_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("Name")
-            email = st.text_input("Email")
-            domain = st.selectbox("Project Type", ["Healthcare", "Finance", "E-commerce", "SaaS", "Other"])
-            status = st.selectbox("Status", ["New", "Contacted", "Proposal Sent", "In Negotiation", "Won", "Lost"])
-            budget = st.number_input("Budget ($)", min_value=0, step=500)
-            resources = st.number_input("Resources", min_value=0, step=1)
-        with col2:
-            start_date = st.date_input("Start Date")
-            end_date = st.date_input("End Date")
-            notes = st.text_area("Notes")
-            requirements = st.text_area("Customer Requirements")
-            uploaded_file = st.file_uploader("Attach Project File")
+        # ➕ Add New Lead
+        st.markdown("### ➕ Add New Lead")
+        with st.form("add_lead_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                name = st.text_input("Name")
+                email = st.text_input("Email")
+                domain = st.selectbox("Project Type", ["Healthcare", "Finance", "E-commerce", "SaaS", "Other"])
+                status = st.selectbox("Status", ["New", "Contacted", "Proposal Sent", "In Negotiation", "Won", "Lost"])
+                budget = st.number_input("Budget ($)", min_value=0, step=500)
+                resources = st.number_input("Resources", min_value=0, step=1)
+            with col2:
+                start_date = st.date_input("Start Date")
+                end_date = st.date_input("End Date")
+                notes = st.text_area("Notes")
+                requirements = st.text_area("Customer Requirements")
+                uploaded_file = st.file_uploader("Attach Project File")
 
-        submitted = st.form_submit_button("Add Lead")
-        if submitted:
-            new_lead = pd.DataFrame([{
-                "Name": name, "Email": email, "Project Type": domain, "Status": status,
-                "Notes": notes, "Start Date": start_date, "End Date": end_date,
-                "Budget": budget, "Resources": resources,
-                "Customer Requirements": requirements
-            }])
-            df = pd.concat([df, new_lead], ignore_index=True)
-            save_leads_data(user_email, df)
+            submitted = st.form_submit_button("Add Lead")
+            if submitted:
+                new_lead = pd.DataFrame([{
+                    "Name": name, "Email": email, "Project Type": domain, "Status": status,
+                    "Notes": notes, "Start Date": start_date, "End Date": end_date,
+                    "Budget": budget, "Resources": resources,
+                    "Customer Requirements": requirements
+                }])
+                df = pd.concat([df, new_lead], ignore_index=True)
+                save_leads_data(user_email, df)
 
-            # Save file
-            if uploaded_file:
-                folder = f"data/uploads/{user_email}/{name.replace(' ', '_')}/"
-                os.makedirs(folder, exist_ok=True)
-                with open(os.path.join(folder, uploaded_file.name), "wb") as f:
-                    f.write(uploaded_file.read())
+                # Save file
+                if uploaded_file:
+                    folder = f"data/uploads/{user_email}/{name.replace(' ', '_')}/"
+                    os.makedirs(folder, exist_ok=True)
+                    with open(os.path.join(folder, uploaded_file.name), "wb") as f:
+                        f.write(uploaded_file.read())
 
-            st.success("✅ Lead added successfully.")
-            st.rerun()
-
-    # Delete
-    st.markdown("### 🗑️ Delete a Lead")
-    if len(df) == 0:
-        st.info("No leads to delete.")
-    else:
-        lead_to_delete = st.selectbox("Select lead", [f"{i} - {row['Name']}" for i, row in df.iterrows()])
-        if lead_to_delete:
-            idx = int(lead_to_delete.split(" - ")[0])
-            if st.button("🗑️ Confirm Delete"):
-                delete_lead(user_email, idx)
-                st.success("Deleted successfully.")
+                st.success("✅ Lead added successfully.")
                 st.rerun()
+
+        # 🗑️ Delete Lead
+        st.markdown("### 🗑️ Delete a Lead")
+        if len(df) == 0:
+            st.info("No leads to delete.")
+        else:
+            lead_to_delete = st.selectbox("Select lead", [f"{i} - {row['Name']}" for i, row in df.iterrows()])
+            if lead_to_delete:
+                idx = int(lead_to_delete.split(" - ")[0])
+                if st.button("🗑️ Confirm Delete"):
+                    delete_lead(user_email, idx)
+                    st.success("Deleted successfully.")
+                    st.rerun()
+
+        # 📊 Show Prioritized Leads Summary
+        st.markdown("### 🔥 Prioritized Lead Summary")
+        st.dataframe(df[[
+            "Name", "Email", "Project Type", "Status",
+            "Budget", "End Date", "Lead Score", "Priority"
+            ]])
+        
+        #kanban view
+        interactive_kanban(df, user_email, save_leads_data)
+        st.markdown("### 🗂 Lead Status Board (Kanban View)")
+        render_kanban(df)
+
+
+
 
 elif page == "📝 Proposal Builder":
     from proposals.proposal_generator import generate_proposal_from_template
