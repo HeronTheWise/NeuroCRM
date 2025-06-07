@@ -104,5 +104,5 @@ def generate_soap_note_pdf(data):
         f.write(buffer.getvalue())
 
     buffer.close()
-    buffer_path
+    return buffer_path
 
