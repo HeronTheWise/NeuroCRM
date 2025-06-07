@@ -60,7 +60,6 @@ def generate_soap_note_pdf(data):
     c.drawString(2 * cm, y, "Patient Details")
     y -= 0.7 * cm
 
-    # Patient Info
     details = [
         ("Name", data.get("patient_name", "")),
         ("Age", data.get("age", "")),
@@ -78,14 +77,14 @@ def generate_soap_note_pdf(data):
     for label, value in details:
         y = draw_wrapped_line(2 * cm, y, f"{label}: {value}", width - 4 * cm)
 
-    # Section: Symptoms
+    # Symptoms
     y -= 0.7 * cm
     c.setFont("Helvetica-Bold", 10)
     c.drawString(2 * cm, y, "Symptoms")
     y -= 0.5 * cm
     y = draw_wrapped_line(2 * cm, y, data.get("symptoms", ""), width - 4 * cm)
 
-    # Section: Diagnosis
+    # Diagnosis
     y -= 1 * cm
     c.setFont("Helvetica-Bold", 10)
     c.drawString(2 * cm, y, "Diagnosis")
@@ -136,16 +135,15 @@ def generate_soap_note_pdf(data):
     c.drawString(6 * cm, y, "<<Place>>")
     c.drawRightString(width - 2 * cm, y, "Electronic Signature of Doctor")
 
-    # Finalize PDF and save
+    # Finalize PDF into memory
     c.save()
     buffer.seek(0)
 
-    # Safe path
-    output_path = "/tmp/soap_note_output.pdf"  # Change from /mnt/data/ to /tmp
+    output_path = "/tmp/soap_note_output.pdf"
 
     try:
         with open(output_path, "wb") as f:
-            f.write(buffer.getvalue())
+            f.write(buffer.read())
     except Exception as e:
         raise RuntimeError(f"Could not write PDF to '{output_path}': {e}")
     finally:
