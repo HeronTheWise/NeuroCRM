@@ -65,11 +65,7 @@ if st.button("📝 Generate Note"):
         }
 
         # Generate PDF bytes with optional logo and watermark (remove or customize these args)
-        pdf_output = generate_soap_note_pdf(
-            data,
-            logo_path="assets/logo.png",       # Optional: set None if no logo
-            watermark_text=None                # Optional: e.g. "CONFIDENTIAL"
-        )
+        pdf_output = generate_soap_note_pdf(note)
 
         st.download_button(
             label="📥 Download SOAP Note (PDF)",
