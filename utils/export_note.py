@@ -140,18 +140,9 @@ def generate_soap_note_pdf(data):
     c.save()
     buffer.seek(0)
 
-    # Define path
-    output_path = "/mnt/data/soap_note_output.pdf"
-    dir_path = os.path.dirname(output_path)
+    # Safe path
+    output_path = "/tmp/soap_note_output.pdf"  # Change from /mnt/data/ to /tmp
 
-    # Ensure directory exists and is valid
-    if dir_path and not os.path.exists(dir_path):
-        try:
-            os.makedirs(dir_path, exist_ok=True)
-        except Exception as e:
-            raise RuntimeError(f"Could not create directory '{dir_path}': {e}")
-
-    # Write file
     try:
         with open(output_path, "wb") as f:
             f.write(buffer.getvalue())
@@ -161,4 +152,3 @@ def generate_soap_note_pdf(data):
         buffer.close()
 
     return output_path
-
