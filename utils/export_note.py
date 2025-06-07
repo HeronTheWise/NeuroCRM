@@ -4,6 +4,19 @@ from reportlab.lib.units import cm
 from datetime import datetime
 from io import BytesIO
 
+def format_date(date_val):
+    if isinstance(date_val, str):
+        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%Y/%m/%d"):
+            try:
+                return datetime.strptime(date_val, fmt).strftime("%d-%m-%Y")
+            except ValueError:
+                continue
+        return date_val
+    elif isinstance(date_val, datetime):
+        return date_val.strftime("%d-%m-%Y")
+    return ""
+
+
 def generate_soap_note_pdf(data):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
@@ -28,7 +41,7 @@ def generate_soap_note_pdf(data):
         ("Age", data.get("age", "")),
         ("Sex", data.get("gender", "")),
         ("Patient ID", data.get("patient_id", "")),
-        ("Visit Date", data.get("visit_date", "").strftime("%d-%m-%Y")),
+        ("Visit Date", format_date(data.get("visit_date", ""))),
         ("Contact", data.get("contact", "")),
         ("Doctor Name", data.get("doctor_name", "")),
         ("Clinic Name", data.get("clinic_name", "")),
