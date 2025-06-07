@@ -13,7 +13,7 @@ except FileNotFoundError as e:
     st.stop()
 
 st.set_page_config(page_title="SOAP Note Builder", layout="centered")
-st.title("🩺 Doctor's SOAP Note Builder (Lite)")
+st.title("Subjective.Objective.Assessment.Plan Note")
 
 # Subjective
 st.header("1. Subjective")
