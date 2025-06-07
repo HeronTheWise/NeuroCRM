@@ -136,7 +136,7 @@ def generate_soap_note_pdf(data):
     c.drawString(6 * cm, y, "<<Place>>")
     c.drawRightString(width - 2 * cm, y, "Electronic Signature of Doctor")
 
- # Finalize PDF and save
+    # Finalize PDF and save
     c.save()
     buffer.seek(0)
 
