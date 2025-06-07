@@ -20,6 +20,18 @@ except FileNotFoundError as e:
 st.set_page_config(page_title="SOAP Note Builder", layout="centered")
 st.title("🩺 Doctor's SOAP Note Builder (Lite)")
 
+# Basic Details
+st.header("Basic Details")
+patient_name = st.text_input("Patient Name")
+age = st.number_input("Age", min_value=0, max_value=120, value=30)
+gender = st.selectbox("Gender", options=["Male", "Female", "Other"])
+patient_id = st.text_input("Patient ID")
+visit_date = st.date_input("Visit Date")
+contact = st.text_input("Contact Information")
+doctor_name = st.text_input("Doctor's Name")
+clinic_name = st.text_input("Clinic Name")
+referred_by = st.text_input("Referred By")
+
 # Subjective
 st.header("1. Subjective")
 chief_complaint = st.text_input("Chief Complaint")
@@ -73,6 +85,15 @@ if st.button("📝 Generate Note"):
         st.error("Please fill in at least Chief Complaint and Primary Diagnosis.")
     else:
         data = {
+            "patient_name": patient_name,
+            "age": age,
+            "gender": gender,
+            "patient_id": patient_id,
+            "visit_date": str(visit_date),
+            "contact": contact,
+            "doctor_name": doctor_name,
+            "clinic_name": clinic_name,
+            "referred_by": referred_by,
             "chief_complaint": chief_complaint,
             "duration": duration,
             "symptoms": symptoms,
