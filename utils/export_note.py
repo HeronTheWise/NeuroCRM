@@ -27,9 +27,15 @@ def generate_soap_note_pdf(data):
         ("Name", data.get("patient_name", "")),
         ("Age", data.get("age", "")),
         ("Sex", data.get("gender", "")),
-        ("Address", data.get("contact", "")),
-        ("ABHA ID", data.get("patient_id", ""))
-    ]
+        ("Patient ID", data.get("patient_id", "")),
+        ("Visit Date", data.get("visit_date", "").strftime("%d-%m-%Y")),
+        ("Contact", data.get("contact", "")),
+        ("Doctor Name", data.get("doctor_name", "")),
+        ("Clinic Name", data.get("clinic_name", "")),
+        ("Referred By", data.get("referred_by", "")),
+        ("Chief Complaint", data.get("chief_complaint", "")),
+        ("Duration of Complaint", data.get("duration", ""))
+        ]
     c.setFont("Helvetica", 10)
     for label, value in details:
         c.drawString(2*cm, y, f"{label}: {value}")
