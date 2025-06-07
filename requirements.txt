@@ -1,4 +1,15 @@
 streamlit
 pandas
 reportlab
-weasyprint
+Flask>=2.0.0         # Or FastAPI/Django if using different backend
+weasyprint>=60.0     # Ensure you're using a stable version
+cffi>=1.15.1
+pycparser
+markupsafe
+jinja2
+requests
+
+# Optional - Used by WeasyPrint for font, image, and layout handling
+tinycss2
+cssselect2
+html5lib
