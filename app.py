@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-from io import BytesIO
 from utils.export_note import generate_soap_note_pdf
 
 # Ensure upload folder exists
@@ -69,16 +68,20 @@ prescribed_drugs = st.multiselect("Prescribed Medications", options=drug_df["dru
 
 # Dosage timing
 dosage_schedule = {}
+bfaf = {}
+quantity = {}
 if prescribed_drugs:
-    st.subheader("Dosage Timing")
+    st.subheader("Dosage Timing & Instructions")
     for drug in prescribed_drugs:
-        cols = st.columns(3)
-        timing = {
-            "Morning": cols[0].checkbox(f"{drug} - Morning"),
-            "Afternoon": cols[1].checkbox(f"{drug} - Afternoon"),
-            "Night": cols[2].checkbox(f"{drug} - Night")
-        }
-        dosage_schedule[drug] = [k for k, v in timing.items() if v]
+        st.markdown(f"**{drug}**")
+        cols = st.columns(5)
+        bfaf[drug] = cols[0].selectbox(f"{drug} - BF/AF", ["BF", "AF"], key=f"bfaf_{drug}")
+        morning = cols[1].number_input(f"{drug} - Morning", min_value=0, max_value=5, value=0, key=f"morning_{drug}")
+        afternoon = cols[2].number_input(f"{drug} - Afternoon", min_value=0, max_value=5, value=0, key=f"afternoon_{drug}")
+        night = cols[3].number_input(f"{drug} - Night", min_value=0, max_value=5, value=0, key=f"night_{drug}")
+        total_qty = cols[4].number_input(f"{drug} - Total Qty", min_value=1, value=10, key=f"qty_{drug}")
+        dosage_schedule[drug] = [morning, afternoon, night]
+        quantity[drug] = total_qty
 
 if st.button("📝 Generate Note"):
     if not chief_complaint or not primary_dx:
@@ -96,7 +99,7 @@ if st.button("📝 Generate Note"):
             "referred_by": referred_by,
             "chief_complaint": chief_complaint,
             "duration": duration,
-            "symptoms": symptoms,
+            "symptoms": ", ".join(symptoms),
             "bp": bp,
             "temp": temp,
             "hr": hr,
@@ -108,15 +111,12 @@ if st.button("📝 Generate Note"):
             "secondary_dx": secondary_dx,
             "treatment_plan": treatment_plan,
             "prescribed_drugs": prescribed_drugs,
-            "dosage_schedule": dosage_schedule
+            "bfaf": bfaf,
+            "dosage_schedule": dosage_schedule,
+            "quantity": quantity,
         }
 
-        pdf_output = generate_soap_note_pdf(data)  # We'll update this function next to handle new fields
-
-        st.download_button(
-            label="📥 Download SOAP Note (PDF)",
-            data=pdf_output,
-            file_name="soap_note.pdf",
-            mime="application/pdf"
-        )
+        pdf_path = generate_soap_note_pdf(data)
+        with open(pdf_path, "rb") as f:
+            st.download_button("📥 Download SOAP Note (PDF)", f, file_name="soap_note.pdf", mime="application/pdf")
         st.success("Note generated successfully!")

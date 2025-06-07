@@ -4,3 +4,4 @@ reportlab
 pdfkit 
 jinja2
 wkhtmltopdf
+xhtml2pdf
