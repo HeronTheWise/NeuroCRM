@@ -66,7 +66,31 @@ if st.button("📝 Generate Note"):
             "prescribed_drugs": prescribed_drugs,
         }
 
-        # Generate PDF bytes with optional logo and watermark (remove or customize these args)
+        # Build the note text from the data dict
+        note = f"""
+SOAP NOTE
+==========
+
+Subjective:
+- Chief Complaint: {data['chief_complaint']}
+- Duration: {data['duration']}
+- Symptoms: {', '.join(data['symptoms']) if data['symptoms'] else 'N/A'}
+
+Objective:
+- BP: {data['bp']}, Temp: {data['temp']}, HR: {data['hr']}, SpO2: {data['spo2']}
+- Clinical Findings: {data['clinical_findings']}
+- Lab Results: {data['lab_results']}
+
+Assessment:
+- Primary Diagnosis: {data['primary_dx']} (ICD-10: {data['icd_code']})
+- Secondary Diagnosis: {data['secondary_dx'] if data['secondary_dx'] else 'N/A'}
+
+Plan:
+- Treatment: {data['treatment_plan']}
+- Medications: {', '.join(data['prescribed_drugs']) if data['prescribed_drugs'] else 'N/A'}
+"""
+
+        # Generate PDF bytes by passing the note string
         pdf_output = generate_soap_note_pdf(note)
 
         st.download_button(
