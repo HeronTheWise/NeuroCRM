@@ -1,9 +1,14 @@
 import streamlit as st
 import pandas as pd
-from utils.export_note import generate_soap_note_pdf  # assuming this file is in the same folder or installed
+import os
 from io import BytesIO
+from utils.export_note import generate_soap_note_pdf
 
-# Load data safely at app start
+# Ensure upload folder exists
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Load data safely
 try:
     icd_df = pd.read_csv("data/icd10.csv")
     drug_df = pd.read_csv("data/drug_list.csv")
@@ -13,7 +18,7 @@ except FileNotFoundError as e:
     st.stop()
 
 st.set_page_config(page_title="SOAP Note Builder", layout="centered")
-st.title("Subjective.Objective.Assessment.Plan Note")
+st.title("🩺 Doctor's SOAP Note Builder (Lite)")
 
 # Subjective
 st.header("1. Subjective")
@@ -28,7 +33,16 @@ temp = st.text_input("Temperature (°C)")
 hr = st.text_input("Heart Rate (bpm)")
 spo2 = st.text_input("SpO2 (%)")
 clinical_findings = st.text_area("Clinical Findings")
-lab_results = st.text_area("Lab Test Results")
+
+uploaded_file = st.file_uploader("Upload Lab Report (PDF, Image, etc.)", type=["pdf", "png", "jpg", "jpeg"])
+if uploaded_file:
+    file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.read())
+    st.success(f"Uploaded to: {file_path}")
+    lab_results = f"Attached file: {uploaded_file.name}"
+else:
+    lab_results = st.text_area("Lab Test Results")
 
 # Assessment
 st.header("3. Assessment")
@@ -41,13 +55,22 @@ st.header("4. Plan")
 treatment_plan = st.text_area("Treatment Plan")
 prescribed_drugs = st.multiselect("Prescribed Medications", options=drug_df["drug"].tolist())
 
-note = "" 
+# Dosage timing
+dosage_schedule = {}
+if prescribed_drugs:
+    st.subheader("Dosage Timing")
+    for drug in prescribed_drugs:
+        cols = st.columns(3)
+        timing = {
+            "Morning": cols[0].checkbox(f"{drug} - Morning"),
+            "Afternoon": cols[1].checkbox(f"{drug} - Afternoon"),
+            "Night": cols[2].checkbox(f"{drug} - Night")
+        }
+        dosage_schedule[drug] = [k for k, v in timing.items() if v]
 
 if st.button("📝 Generate Note"):
-
-    # Validate minimal inputs
     if not chief_complaint or not primary_dx:
-        st.error("Please fill in at least Chief Complaint and Primary Diagnosis to generate the note.")
+        st.error("Please fill in at least Chief Complaint and Primary Diagnosis.")
     else:
         data = {
             "chief_complaint": chief_complaint,
@@ -64,34 +87,10 @@ if st.button("📝 Generate Note"):
             "secondary_dx": secondary_dx,
             "treatment_plan": treatment_plan,
             "prescribed_drugs": prescribed_drugs,
+            "dosage_schedule": dosage_schedule
         }
 
-        # Build the note text from the data dict
-        note = f"""
-SOAP NOTE
-==========
-
-Subjective:
-- Chief Complaint: {data['chief_complaint']}
-- Duration: {data['duration']}
-- Symptoms: {', '.join(data['symptoms']) if data['symptoms'] else 'N/A'}
-
-Objective:
-- BP: {data['bp']}, Temp: {data['temp']}, HR: {data['hr']}, SpO2: {data['spo2']}
-- Clinical Findings: {data['clinical_findings']}
-- Lab Results: {data['lab_results']}
-
-Assessment:
-- Primary Diagnosis: {data['primary_dx']} (ICD-10: {data['icd_code']})
-- Secondary Diagnosis: {data['secondary_dx'] if data['secondary_dx'] else 'N/A'}
-
-Plan:
-- Treatment: {data['treatment_plan']}
-- Medications: {', '.join(data['prescribed_drugs']) if data['prescribed_drugs'] else 'N/A'}
-"""
-
-        # Generate PDF bytes by passing the note string
-        pdf_output = generate_soap_note_pdf(note)
+        pdf_output = generate_soap_note_pdf(data)  # We'll update this function next to handle new fields
 
         st.download_button(
             label="📥 Download SOAP Note (PDF)",
