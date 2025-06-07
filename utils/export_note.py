@@ -9,92 +9,94 @@ def generate_soap_note_pdf(data):
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Watermark
-    c.setFont("Helvetica", 40)
-    c.setFillGray(0.9, 0.5)
-    c.saveState()
-    c.translate(10*cm, 15*cm)
-    c.rotate(45)
-    c.drawCentredString(0, 0, "NeuroCare Clinic")
-    c.restoreState()
-
-    # Header
-    c.setFont("Helvetica-Bold", 16)
-    c.setFillColorRGB(0, 0, 0)
-    c.drawString(2*cm, height - 2*cm, "SOAP Note")
-
-    c.setFont("Helvetica", 10)
-    c.drawString(2*cm, height - 2.5*cm, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-    y = height - 3.5*cm
-    line_height = 14
-
-    def write_line(label, value):
-        nonlocal y
-        if isinstance(value, list):
-            value = ", ".join(value)
-        text = f"{label}: {value}"
-        for line in textwrap(text, 100):
-            c.drawString(2*cm, y, line)
-            y -= line_height
-
-    def textwrap(text, width=100):
-        import textwrap
-        return textwrap.wrap(text, width)
-
-    # Basic Details
+    # Header Section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, "Basic Details")
-    y -= line_height
-    c.setFont("Helvetica", 12)
-    for field in ["patient_name", "age", "gender", "patient_id", "visit_date", "contact", "doctor_name", "clinic_name", "referred_by"]:
-        value = data.get(field, "")
-        c.drawString(2*cm, y, f"{field.replace('_', ' ').title()}: {value}")
-        y -= line_height
-    # Subjective
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, "Subjective")
-    y -= line_height
+    c.drawString(2*cm, height - 2*cm, "Dr. XXXXX XXXXXX")
     c.setFont("Helvetica", 10)
-    write_line("Chief Complaint", data["chief_complaint"])
-    write_line("Duration", data["duration"])
-    write_line("Symptoms", data["symptoms"])
+    c.drawString(2*cm, height - 2.5*cm, "MD, RUGHS, FELLOW")
+    c.drawString(2*cm, height - 3*cm, "Timings")
 
-    # Objective
+    # Title Section
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, "Objective")
-    y -= line_height
+    y = height - 4.2*cm
+    c.drawString(2*cm, y, "Patient Details")
+    y -= 0.5*cm
+
+    # Basic Details Table
+    details = [
+        ("Name", data.get("patient_name", "")),
+        ("Age", data.get("age", "")),
+        ("Sex", data.get("gender", "")),
+        ("Address", data.get("contact", "")),
+        ("ABHA ID", data.get("patient_id", ""))
+    ]
     c.setFont("Helvetica", 10)
-    write_line("Blood Pressure", data["bp"])
-    write_line("Temperature", data["temp"])
-    write_line("Heart Rate", data["hr"])
-    write_line("SpO2", data["spo2"])
-    write_line("Clinical Findings", data["clinical_findings"])
-    write_line("Lab Results", data["lab_results"])
+    for label, value in details:
+        c.drawString(2*cm, y, f"{label}: {value}")
+        y -= 0.5*cm
 
-    # Assessment
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, "Assessment")
-    y -= line_height
+    # Section: Symptoms
+    y -= 0.5*cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2*cm, y, "Symptoms")
+    y -= 0.5*cm
     c.setFont("Helvetica", 10)
-    write_line("Primary Diagnosis", f"{data['primary_dx']} (ICD-10: {data['icd_code']})")
-    write_line("Secondary Diagnosis", data["secondary_dx"])
+    c.drawString(2*cm, y, data.get("symptoms", ""))
 
-    # Plan
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, "Plan")
-    y -= line_height
+    # Section: Diagnosis
+    y -= 1*cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2*cm, y, "Diagnosis")
+    y -= 0.5*cm
     c.setFont("Helvetica", 10)
-    write_line("Treatment Plan", data["treatment_plan"])
+    dx_str = f"{data.get('primary_dx', '')} (ICD-10: {data.get('icd_code', '')})"
+    c.drawString(2*cm, y, dx_str)
+    y -= 0.5*cm
+    c.drawString(2*cm, y, data.get("secondary_dx", ""))
 
-    prescribed_drugs = data.get("prescribed_drugs", [])
-    dosage_schedule = data.get("dosage_schedule", {})
+    # Section: Prescription Table
+    y -= 1*cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2*cm, y, "Prescription")
+    y -= 0.5*cm
 
-    for drug in prescribed_drugs:
-        dosage = ", ".join(dosage_schedule.get(drug, []))
-        write_line("Medication", f"{drug} - ({dosage if dosage else 'No time specified'})")
+    table_headers = ["Drug", "BF/AF", "Morning", "Afternoon", "Night", "Total Quantity"]
+    col_x = [2*cm, 6*cm, 8*cm, 10*cm, 12*cm, 14*cm]
+    for i, header in enumerate(table_headers):
+        c.drawString(col_x[i], y, header)
+    y -= 0.5*cm
 
-    c.showPage()
+    c.setFont("Helvetica", 9)
+    for drug in data.get("prescribed_drugs", []):
+        c.drawString(col_x[0], y, drug)
+        c.drawString(col_x[1], y, data.get("bfaf", {}).get(drug, ""))
+        schedule = data.get("dosage_schedule", {}).get(drug, ["", "", ""])
+        for i in range(3):
+            c.drawString(col_x[2+i], y, schedule[i] if i < len(schedule) else "")
+        c.drawString(col_x[5], y, data.get("quantity", {}).get(drug, ""))
+        y -= 0.5*cm
+
+    # Prognosis
+    y -= 1*cm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2*cm, y, "Prognosis")
+    y -= 0.5*cm
+    c.setFont("Helvetica", 10)
+    c.drawString(2*cm, y, data.get("prognosis", ""))
+
+    # Footer
+    y = 2.5*cm
+    c.setFont("Helvetica", 10)
+    c.drawString(2*cm, y, datetime.today().strftime("%d-%m-%Y"))
+    c.drawString(6*cm, y, "<<Place>>")
+    c.drawRightString(width - 2*cm, y, "Electronic Signature of Doctor")
+
     c.save()
     buffer.seek(0)
-    return buffer.getvalue()
+    buffer_path = "/mnt/data/soap_note_output.pdf"
+    with open(buffer_path, "wb") as f:
+        f.write(buffer.getvalue())
+
+    buffer.close()
+    buffer_path
+
