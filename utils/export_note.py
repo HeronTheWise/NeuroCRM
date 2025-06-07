@@ -136,17 +136,17 @@ def generate_soap_note_pdf(data):
     c.drawString(6 * cm, y, "<<Place>>")
     c.drawRightString(width - 2 * cm, y, "Electronic Signature of Doctor")
 
-    # Finalize
+ # Finalize PDF and save
     c.save()
     buffer.seek(0)
 
     # Safe write to output path
     output_path = "/mnt/data/soap_note_output.pdf"
-    try:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        with open(output_path, "wb") as f:
-            f.write(buffer.getvalue())
-    finally:
-        buffer.close()
+    dir_path = os.path.dirname(output_path)
+    if dir_path:
+        os.makedirs(dir_path, exist_ok=True)
+    with open(output_path, "wb") as f:
+        f.write(buffer.getvalue())
 
+    buffer.close()
     return output_path
