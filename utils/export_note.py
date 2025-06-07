@@ -42,6 +42,15 @@ def generate_soap_note_pdf(data):
         import textwrap
         return textwrap.wrap(text, width)
 
+    # Basic Details
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(2*cm, y, "Basic Details")
+    y -= line_height
+    c.setFont("Helvetica", 12)
+    for field in ["patient_name", "age", "gender", "patient_id", "visit_date", "contact", "doctor_name", "clinic_name", "referred_by"]:
+        value = data.get(field, "")
+        c.drawString(2*cm, y, f"{field.replace('_', ' ').title()}: {value}")
+        y -= line_height
     # Subjective
     c.setFont("Helvetica-Bold", 12)
     c.drawString(2*cm, y, "Subjective")
