@@ -1,16 +1,9 @@
-# This script builds a SOAP Note form using Streamlit.
-# To run it locally, make sure Streamlit is installed: `pip install streamlit`
-
-try:
-    import streamlit as st
-except ModuleNotFoundError:
-    raise ModuleNotFoundError("Streamlit is not installed. Please install it with 'pip install streamlit'.")
-
+import streamlit as st
 import pandas as pd
+from export_note import generate_soap_note_pdf  # assuming this file is in the same folder or installed
 from io import BytesIO
-from fpdf import FPDF
 
-# Load data safely
+# Load data safely at app start
 try:
     icd_df = pd.read_csv("data/icd10.csv")
     drug_df = pd.read_csv("data/drug_list.csv")
@@ -48,47 +41,40 @@ st.header("4. Plan")
 treatment_plan = st.text_area("Treatment Plan")
 prescribed_drugs = st.multiselect("Prescribed Medications", options=drug_df["drug"].tolist())
 
-# Generate and export
 if st.button("📝 Generate Note"):
-    note = f"""
-    SOAP NOTE
-    =============
 
-    Subjective:
-    - Chief Complaint: {chief_complaint}
-    - Duration: {duration}
-    - Symptoms: {', '.join(symptoms)}
+    # Validate minimal inputs
+    if not chief_complaint or not primary_dx:
+        st.error("Please fill in at least Chief Complaint and Primary Diagnosis to generate the note.")
+    else:
+        data = {
+            "chief_complaint": chief_complaint,
+            "duration": duration,
+            "symptoms": symptoms,
+            "bp": bp,
+            "temp": temp,
+            "hr": hr,
+            "spo2": spo2,
+            "clinical_findings": clinical_findings,
+            "lab_results": lab_results,
+            "primary_dx": primary_dx,
+            "icd_code": icd_code,
+            "secondary_dx": secondary_dx,
+            "treatment_plan": treatment_plan,
+            "prescribed_drugs": prescribed_drugs,
+        }
 
-    Objective:
-    - BP: {bp}, Temp: {temp}, HR: {hr}, SpO2: {spo2}
-    - Clinical Findings: {clinical_findings}
-    - Lab Results: {lab_results}
+        # Generate PDF bytes with optional logo and watermark (remove or customize these args)
+        pdf_output = generate_soap_note_pdf(
+            data,
+            logo_path="assets/logo.png",       # Optional: set None if no logo
+            watermark_text=None                # Optional: e.g. "CONFIDENTIAL"
+        )
 
-    Assessment:
-    - Primary Diagnosis: {primary_dx} (ICD-10: {icd_code})
-    - Secondary Diagnosis: {secondary_dx}
-
-    Plan:
-    - Treatment: {treatment_plan}
-    - Medications: {', '.join(prescribed_drugs)}
-    """
-
-    # Generate PDF
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    for line in note.strip().split("\n"):
-        pdf.multi_cell(0, 10, line)
-
-    pdf_output = BytesIO()
-    pdf.output(pdf_output)
-    pdf_output.seek(0)
-
-    st.download_button(
-        label="📥 Download SOAP Note (PDF)",
-        data=pdf_output,
-        file_name="soap_note.pdf",
-        mime="application/pdf"
-    )
-
-    st.success("Note generated successfully!")
+        st.download_button(
+            label="📥 Download SOAP Note (PDF)",
+            data=pdf_output,
+            file_name="soap_note.pdf",
+            mime="application/pdf"
+        )
+        st.success("Note generated successfully!")
