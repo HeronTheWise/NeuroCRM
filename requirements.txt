@@ -1,11 +1,5 @@
 streamlit
 pandas
 reportlab
-weasyprint>=60.0
-Flask
+pdfkit 
 jinja2
-cffi>=1.15.1
-tinycss2
-cssselect2
-html5lib
-markupsafe
