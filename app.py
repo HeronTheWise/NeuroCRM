@@ -41,6 +41,8 @@ st.header("4. Plan")
 treatment_plan = st.text_area("Treatment Plan")
 prescribed_drugs = st.multiselect("Prescribed Medications", options=drug_df["drug"].tolist())
 
+note = "" 
+
 if st.button("📝 Generate Note"):
 
     # Validate minimal inputs
