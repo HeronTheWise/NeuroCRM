@@ -18,6 +18,12 @@ def format_date(date_val):
     return ""
 
 def wrap_text(text, font, size, max_width, canvas_obj):
+    if text is None:
+        text = ""
+    elif isinstance(text, bytes):
+        text = text.decode('utf-8', errors='replace')
+    elif not isinstance(text, str):
+        text = str(text)
     lines = simpleSplit(text, font, size, max_width)
     return lines
 
