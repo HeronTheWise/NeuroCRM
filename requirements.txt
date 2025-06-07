@@ -3,3 +3,4 @@ pandas
 reportlab
 pdfkit 
 jinja2
+wkhtmltopdf
