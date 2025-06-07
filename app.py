@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from export_note import generate_soap_note_pdf  # assuming this file is in the same folder or installed
+from utils.export_note import generate_soap_note_pdf  # assuming this file is in the same folder or installed
 from io import BytesIO
 
 # Load data safely at app start
